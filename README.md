@@ -12,6 +12,7 @@ I needed a simple workflow to engrave QR codes into surfaces in Autodesk Invento
 
 - [qrcode](https://pypi.org/project/qrcode/) — QR code generator
 - [ezdxf](https://ezdxf.readthedocs.io/) — DXF library for Python
+- [pillow](https://pypi.org/project/pillow/) — PNG reference image generation
 
 ## Setup
 
@@ -34,12 +35,14 @@ pip install -r requirements.txt
 
 ## Usage
 
+All output files (DXF + PNG reference) are written to the `output/` directory, which is recreated on each run.
+
 ```bash
 # Single QR code (default 30x30mm)
-python qr2dxf.py "https://example.com" -o example.dxf
+python qr2dxf.py "https://example.com"
 
 # With edge length in mm
-python qr2dxf.py "https://example.com" -o example.dxf --size 50
+python qr2dxf.py "https://example.com" --size 50
 
 # Batch: text file with one URL per line
 python qr2dxf.py --batch urls.txt --size 40

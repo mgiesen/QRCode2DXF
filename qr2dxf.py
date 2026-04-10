@@ -2,6 +2,7 @@
 """Generates QR codes as DXF files with clean, closed outline contours."""
 
 import argparse
+import shutil
 import sys
 from collections import defaultdict
 from pathlib import Path
@@ -10,8 +11,8 @@ import ezdxf
 import qrcode
 
 
-def generate_grid(text):
-    """Generates a QR code and returns the black modules as a set of (col, row) tuples."""
+def generate_qr(text):
+    """Generates a QR code and returns the QR object, black modules grid, and grid size."""
     qr = qrcode.QRCode(border=0)
     qr.add_data(text)
     qr.make()
@@ -24,7 +25,7 @@ def generate_grid(text):
                 grid.add((col, row))
 
     grid_size = len(matrix)
-    return grid, grid_size
+    return qr, grid, grid_size
 
 
 def trace_contours(grid):
@@ -86,41 +87,51 @@ def write_dxf(contours, grid_size, size_mm, output_path):
     doc.saveas(output_path)
 
 
-def process_one(text, output_path, size_mm):
-    """Generates a QR code and converts it to DXF."""
-    grid, grid_size = generate_grid(text)
+def write_png(qr, output_path):
+    """Writes the QR code as a PNG reference image."""
+    img = qr.make_image(fill_color="black", back_color="white")
+    img.save(output_path)
+
+
+def process_one(text, output_dir, basename, size_mm):
+    """Generates a QR code and writes DXF + PNG to output_dir."""
+    qr, grid, grid_size = generate_qr(text)
 
     if not grid:
         print(f"No black modules found for: {text}", file=sys.stderr)
         return
 
+    dxf_path = output_dir / f"{basename}.dxf"
+    png_path = output_dir / f"{basename}.png"
+
     contours = trace_contours(grid)
-    write_dxf(contours, grid_size, size_mm, output_path)
-    print(f"{output_path} ({len(grid)} modules -> {len(contours)} contours, {size_mm}x{size_mm}mm)")
+    write_dxf(contours, grid_size, size_mm, str(dxf_path))
+    write_png(qr, str(png_path))
+    print(f"{dxf_path} ({len(grid)} modules -> {len(contours)} contours, {size_mm}x{size_mm}mm)")
 
 
 def main():
     parser = argparse.ArgumentParser(description="QR code to DXF for Autodesk Inventor")
     parser.add_argument("text", nargs="?", help="Text/URL for the QR code")
-    parser.add_argument("-o", "--output", help="Output file (.dxf)")
     parser.add_argument("--size", type=float, default=30,
                         help="Edge length of the QR code in mm (default: 30)")
     parser.add_argument("--batch", help="Text file with one URL per line")
     args = parser.parse_args()
 
+    output_dir = Path("output")
+    if output_dir.exists():
+        shutil.rmtree(output_dir)
+    output_dir.mkdir()
+
     if args.batch:
         lines = Path(args.batch).read_text().strip().splitlines()
-        output_dir = Path("output")
-        output_dir.mkdir(exist_ok=True)
         for i, line in enumerate(lines):
             line = line.strip()
             if not line:
                 continue
-            out = output_dir / f"qr_{i:03d}.dxf"
-            process_one(line, str(out), args.size)
+            process_one(line, output_dir, f"qr_code_{i + 1:03d}", args.size)
     elif args.text:
-        output = args.output or "output.dxf"
-        process_one(args.text, output, args.size)
+        process_one(args.text, output_dir, "qr_code", args.size)
     else:
         parser.print_help()
         sys.exit(1)
