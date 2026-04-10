@@ -6,7 +6,7 @@ A small Python script that generates QR codes as DXF files with clean, closed ou
 
 I needed a simple workflow to engrave QR codes into surfaces in Autodesk Inventor (e.g. for 3D printing). The most direct way in Inventor is to import a DXF into a sketch and extrude from there. This script automates that: it generates a QR code, traces the outer contours of the black regions, and writes them as closed polylines into a DXF — no internal edges, so direct extrusion just works.
 
-![QR code extruded in Autodesk Inventor](images/inventor-extrude-preview.png)
+![QR code extruded in Autodesk Inventor](images/inventor-extrude-preview.webp)
 
 ## Dependencies
 
